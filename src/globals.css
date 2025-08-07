@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%; /* Deep dark background */
+    --foreground: 210 40% 98%; /* Off-white text */
+
+    --card: 240 10% 8%; /* Slightly lighter dark for cards */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 240 10% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 270 90% 65%; /* More saturated purple */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 330 90% 50%; /* More saturated pink */
+    --secondary-foreground: 210 40% 98%;
+
+    --destructive: 0 80% 55%; /* More saturated red */
+    --destructive-foreground: 210 40% 98%;
+
+    --muted: 240 10% 12%; /* Slightly darker muted */
+    --muted-foreground: 215 20.2% 75%; /* Lighter muted text for better contrast */
+
+    --accent: 0 90% 60%; /* More saturated red/orange */
+    --accent-foreground: 210 40% 98%;
+
+    --border: 240 10% 25%; /* Slightly lighter border for visibility */
+    --input: 240 10% 25%;
+    --ring: 270 90% 65%; /* Matches new primary */
+
+    --sidebar-background: 240 10% 5%; /* Very dark sidebar */
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 270 90% 65%; /* Vibrant purple for sidebar primary */
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 330 90% 50%; /* Deep pink for sidebar accent */
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 240 10% 25%;
+    --sidebar-ring: 270 90% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
