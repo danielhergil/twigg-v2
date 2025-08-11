@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Supabase client (contains sensitive data)
+src/integrations/supabase/client.ts

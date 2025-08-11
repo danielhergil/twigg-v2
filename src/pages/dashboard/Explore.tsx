@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Search, 
   Filter, 
@@ -11,7 +14,15 @@ import {
   Star, 
   Users, 
   TrendingUp,
-  Award
+  Award,
+  Play,
+  Heart,
+  Bookmark,
+  BarChart3,
+  Flame,
+  Calendar,
+  Globe,
+  SlidersHorizontal
 } from "lucide-react";
 import {
   Select,
@@ -20,155 +31,348 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { showError } from "@/utils/toast";
 
-// Mock data for demonstration
-const mockCourses = [
-  {
-    id: 1,
-    title: "Advanced React Patterns",
-    instructor: "Alex Johnson",
-    rating: 4.8,
-    students: 1240,
-    level: "Advanced",
-    duration: "8 hours",
-    topics: ["React", "JavaScript", "Frontend"],
-    tags: ["react", "patterns", "advanced"],
-    thumbnail: "/placeholder.svg",
-    isFeatured: true,
-    description: "Master advanced React patterns and techniques used by experts."
-  },
-  {
-    id: 2,
-    title: "UI/UX Design Fundamentals",
-    instructor: "Sarah Miller",
-    rating: 4.9,
-    students: 2100,
-    level: "Beginner",
-    duration: "12 hours",
-    topics: ["Design", "UI/UX", "Figma"],
-    tags: ["design", "ui", "ux", "figma"],
-    thumbnail: "/placeholder.svg",
-    isFeatured: true,
-    description: "Learn the fundamentals of user interface and user experience design."
-  },
-  {
-    id: 3,
-    title: "TypeScript Masterclass",
-    instructor: "Michael Chen",
-    rating: 4.7,
-    students: 980,
-    level: "Intermediate",
-    duration: "10 hours",
-    topics: ["TypeScript", "JavaScript", "Programming"],
-    tags: ["typescript", "javascript", "programming"],
-    thumbnail: "/placeholder.svg",
-    isFeatured: false,
-    description: "Become a TypeScript expert with this comprehensive masterclass."
-  },
-  {
-    id: 4,
-    title: "Data Visualization with D3.js",
-    instructor: "Emma Wilson",
-    rating: 4.6,
-    students: 750,
-    level: "Intermediate",
-    duration: "6 hours",
-    topics: ["Data Visualization", "D3.js", "JavaScript"],
-    tags: ["d3", "data", "visualization"],
-    thumbnail: "/placeholder.svg",
-    isFeatured: false,
-    description: "Create stunning data visualizations with D3.js."
-  },
-  {
-    id: 5,
-    title: "Node.js Backend Development",
-    instructor: "David Brown",
-    rating: 4.8,
-    students: 1560,
-    level: "Intermediate",
-    duration: "15 hours",
-    topics: ["Node.js", "Backend", "API"],
-    tags: ["nodejs", "backend", "api"],
-    thumbnail: "/placeholder.svg",
-    isFeatured: true,
-    description: "Build scalable backend applications with Node.js."
-  },
-  {
-    id: 6,
-    title: "Machine Learning Basics",
-    instructor: "Dr. Rachel Green",
-    rating: 4.5,
-    students: 890,
-    level: "Advanced",
-    duration: "20 hours",
-    topics: ["Machine Learning", "Python", "AI"],
-    tags: ["ml", "python", "ai"],
-    thumbnail: "/placeholder.svg",
-    isFeatured: false,
-    description: "Introduction to machine learning concepts and algorithms."
-  }
-];
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string | null;
+  is_published: boolean;
+  level: string | null;
+  duration_weeks: number | null;
+  reviews_count: number;
+  rating_avg: number;
+  language: string;
+  created_at: string;
+  user_id: string;
+  profiles: {
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+}
 
-const suggestedCourses = mockCourses.slice(0, 3);
-const featuredCourses = mockCourses.filter(course => course.isFeatured);
+interface CourseWithInstructor extends Course {
+  instructor: string;
+  students: number;
+  duration: string;
+  isFeatured: boolean;
+}
 
 export default function Explore() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedLevel, setSelectedLevel] = React.useState<string>("all");
   const [sortBy, setSortBy] = React.useState<string>("popular");
+  const [courses, setCourses] = useState<CourseWithInstructor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      
+      // First, let's just fetch courses without the join to see if that works
+      console.log('Fetching courses...');
+      const { data: coursesData, error: coursesError } = await supabase
+        .from('courses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      console.log('Courses data:', { coursesData, coursesError });
+
+      if (coursesError) throw coursesError;
+
+      // If we have courses, let's also fetch the profile data separately
+      const userIds = coursesData?.map(course => course.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+      console.log('Profiles data:', { profilesData, profilesError });
+
+      // Create a map of user_id to profile for easy lookup
+      const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+
+      const coursesWithInstructor: CourseWithInstructor[] = (coursesData || []).map(course => {
+        const profile = profilesMap.get(course.user_id);
+        return {
+          ...course,
+          profiles: profile || null,
+          instructor: profile ? 
+            `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown Instructor'
+            : 'Unknown Instructor',
+          students: Math.floor(Math.random() * 2000) + 100, // Mock student count for now
+          duration: course.duration_weeks ? `${course.duration_weeks} weeks` : 'Variable',
+          isFeatured: (course.rating_avg || 0) >= 4.5 && (course.reviews_count || 0) >= 10,
+          rating_avg: course.rating_avg || 0,
+          reviews_count: course.reviews_count || 0
+        };
+      });
+
+      console.log('Processed courses:', coursesWithInstructor);
+      setCourses(coursesWithInstructor);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      showError('Failed to load courses');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter courses based on search and filters
-  const filteredCourses = mockCourses.filter(course => {
+  const filteredCourses = courses.filter(course => {
     const matchesSearch = 
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (course.description && course.description.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesLevel = selectedLevel === "all" || course.level === selectedLevel;
+    const matchesLevel = selectedLevel === "all" || (course.level && course.level.toLowerCase() === selectedLevel.toLowerCase());
     
     return matchesSearch && matchesLevel;
   });
 
+  const sortedCourses = [...filteredCourses].sort((a, b) => {
+    switch (sortBy) {
+      case 'rating':
+        return (b.rating_avg || 0) - (a.rating_avg || 0);
+      case 'newest':
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case 'popular':
+      default:
+        return b.students - a.students;
+    }
+  });
+
+  const suggestedCourses = courses.slice(0, 3);
+  const featuredCourses = courses.filter(course => course.isFeatured);
+
+  // Enhanced Course Card Component
+  const CourseCard = ({ course, navigate, variant = "default" }: {
+    course: CourseWithInstructor;
+    navigate: (path: string) => void;
+    variant?: "default" | "suggested" | "featured" | "trending";
+  }) => {
+    const getGradientClass = () => {
+      switch (variant) {
+        case "suggested":
+          return "from-purple-400 to-pink-500";
+        case "featured":
+          return "from-blue-400 to-teal-500";
+        case "trending":
+          return "from-orange-400 to-red-500";
+        default:
+          return "from-indigo-400 to-purple-500";
+      }
+    };
+
+    const getVariantBadge = () => {
+      switch (variant) {
+        case "featured":
+          return (
+            <Badge className="absolute top-3 right-3 bg-white/90 text-black hover:bg-white">
+              <Award className="h-3 w-3 mr-1" />
+              Featured
+            </Badge>
+          );
+        case "trending":
+          return (
+            <Badge className="absolute top-3 right-3 bg-orange-500 hover:bg-orange-600">
+              <Flame className="h-3 w-3 mr-1" />
+              Trending
+            </Badge>
+          );
+        case "suggested":
+          return (
+            <Badge className="absolute top-3 right-3 bg-purple-500 hover:bg-purple-600">
+              <TrendingUp className="h-3 w-3 mr-1" />
+              For You
+            </Badge>
+          );
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <Card 
+        className="group flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 border-0 shadow-lg overflow-hidden" 
+        onClick={() => navigate(`/dashboard/course/${course.id}`)}
+      >
+        <div className={`relative h-48 bg-gradient-to-r ${getGradientClass()}`}>
+          {course.thumbnail_url ? (
+            <img 
+              src={course.thumbnail_url} 
+              alt={course.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <BookOpen className="h-12 w-12 text-white/80" />
+            </div>
+          )}
+          
+          {getVariantBadge()}
+          
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+          
+          <Button 
+            size="sm" 
+            className="absolute bottom-3 left-3 bg-white/90 text-black hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => { e.stopPropagation(); }}
+          >
+            <Play className="h-4 w-4 mr-1" />
+            Preview
+          </Button>
+          
+          <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button size="sm" variant="ghost" className="bg-white/20 hover:bg-white/30 text-white h-8 w-8 p-0">
+              <Heart className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="ghost" className="bg-white/20 hover:bg-white/30 text-white h-8 w-8 p-0">
+              <Bookmark className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="line-clamp-2 text-lg group-hover:text-primary transition-colors">
+              {course.title}
+            </CardTitle>
+          </div>
+          <CardDescription className="flex items-center gap-2">
+            <Users className="h-3 w-3" />
+            {course.instructor}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="flex-1 pt-0">
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+            {course.description}
+          </p>
+          
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-sm font-semibold">{(course.rating_avg || 0).toFixed(1)}</span>
+              <span className="text-xs text-muted-foreground">({course.reviews_count || 0})</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">{course.students.toLocaleString()}</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-1">
+              <Badge variant="secondary" className="text-xs">{course.level || 'All levels'}</Badge>
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {course.duration}
+              </Badge>
+            </div>
+            <div className="text-lg font-bold text-green-600">Free</div>
+          </div>
+        </CardContent>
+        
+        <CardFooter className="pt-0">
+          <Button 
+            className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors" 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              navigate(`/dashboard/course/${course.id}`);
+            }}
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Start Learning
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Explore Courses</h1>
-        <p className="text-muted-foreground">Discover new skills and advance your career</p>
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 p-8 md:p-12">
+        <div className="relative z-10 max-w-4xl">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Discover Your Next 
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+              Learning Adventure
+            </span>
+          </h1>
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl">
+            Explore thousands of courses from world-class instructors and unlock your potential with hands-on learning.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100">
+              <Play className="h-5 w-5 mr-2" />
+              Start Learning Today
+            </Button>
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900">
+              <BarChart3 className="h-5 w-5 mr-2" />
+              Browse by Category
+            </Button>
+          </div>
+        </div>
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute -top-10 -right-10 h-40 w-40 bg-white/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 h-32 w-32 bg-yellow-400/30 rounded-full blur-2xl" />
       </div>
 
       {/* Search and Filters */}
       <div className="space-y-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search courses, topics, or instructors..."
-            className="pl-10 py-6 text-lg"
+            className="pl-12 py-6 text-lg border-2 focus:border-primary rounded-xl shadow-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Filters</span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <SlidersHorizontal className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Filter Results</h3>
+                <p className="text-sm text-muted-foreground">Refine your search to find the perfect course</p>
+              </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Level" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Levels</SelectItem>
-                  <SelectItem value="Beginner">Beginner</SelectItem>
-                  <SelectItem value="Intermediate">Intermediate</SelectItem>
-                  <SelectItem value="Advanced">Advanced</SelectItem>
+                  <SelectItem value="beginner">Beginner</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -179,133 +383,123 @@ export default function Explore() {
               </Select>
             </div>
           </div>
+          
+          <div className="lg:w-80">
+            <div className="bg-muted/50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium">Results Found</span>
+                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                  {filteredCourses.length}
+                </Badge>
+              </div>
+              <Progress value={(filteredCourses.length / courses.length) * 100} className="h-2" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Suggested Courses Section */}
-      <section className="space-y-4">
+      {/* Course Sections with Tabs */}
+      <Tabs defaultValue="all" className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Suggested for You</h2>
-          <Button variant="link" className="text-primary">View all</Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {suggestedCourses.map((course) => (
-            <Card key={course.id} className="flex flex-col hover:shadow-lg transition-shadow">
-              <div className="h-40 bg-gradient-to-r from-purple-400 to-pink-500 rounded-t-lg" />
-              <CardHeader>
-                <CardTitle className="line-clamp-1">{course.title}</CardTitle>
-                <CardDescription>{course.instructor}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {course.description}
-                </p>
-                <div className="flex items-center mt-3 gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{course.rating}</span>
-                  <Users className="h-4 w-4 ml-2 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{course.students}</span>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  <Badge variant="secondary">{course.level}</Badge>
-                  <Badge variant="outline">{course.duration}</Badge>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full">Enroll Now</Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Courses Section */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Featured Courses</h2>
-          <Button variant="link" className="text-primary">View all</Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredCourses.map((course) => (
-            <Card key={course.id} className="flex flex-col hover:shadow-lg transition-shadow">
-              <div className="h-40 bg-gradient-to-r from-blue-400 to-teal-500 rounded-t-lg" />
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="line-clamp-1">{course.title}</CardTitle>
-                    <CardDescription>{course.instructor}</CardDescription>
-                  </div>
-                  <Badge className="flex items-center gap-1" variant="default">
-                    <Award className="h-3 w-3" />
-                    Featured
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {course.description}
-                </p>
-                <div className="flex items-center mt-3 gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{course.rating}</span>
-                  <Users className="h-4 w-4 ml-2 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{course.students}</span>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  <Badge variant="secondary">{course.level}</Badge>
-                  <Badge variant="outline">{course.duration}</Badge>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full">Enroll Now</Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* All Courses Section */}
-      <section className="space-y-4">
-        <h2 className="text-2xl font-bold">All Courses</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course) => (
-            <Card key={course.id} className="flex flex-col hover:shadow-lg transition-shadow">
-              <div className="h-40 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-t-lg" />
-              <CardHeader>
-                <CardTitle className="line-clamp-1">{course.title}</CardTitle>
-                <CardDescription>{course.instructor}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {course.description}
-                </p>
-                <div className="flex items-center mt-3 gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{course.rating}</span>
-                  <Users className="h-4 w-4 ml-2 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{course.students}</span>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  <Badge variant="secondary">{course.level}</Badge>
-                  <Badge variant="outline">{course.duration}</Badge>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full">Enroll Now</Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-        {filteredCourses.length === 0 && (
-          <div className="text-center py-12">
-            <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-medium">No courses found</h3>
-            <p className="mt-2 text-muted-foreground">
-              Try adjusting your search or filter criteria
-            </p>
+          <TabsList className="grid grid-cols-4 w-auto">
+            <TabsTrigger value="all" className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              All Courses
+            </TabsTrigger>
+            <TabsTrigger value="suggested" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Suggested
+            </TabsTrigger>
+            <TabsTrigger value="featured" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              Featured
+            </TabsTrigger>
+            <TabsTrigger value="trending" className="flex items-center gap-2">
+              <Flame className="h-4 w-4" />
+              Trending
+            </TabsTrigger>
+          </TabsList>
+          
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            Updated today
           </div>
-        )}
-      </section>
+        </div>
+
+        <TabsContent value="all" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">All Courses</h2>
+              <p className="text-muted-foreground">Browse our complete course catalog</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedCourses.map((course) => (
+              <CourseCard key={course.id} course={course} navigate={navigate} />
+            ))}
+          </div>
+          {sortedCourses.length === 0 && (
+            <div className="text-center py-12">
+              <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-medium">No courses found</h3>
+              <p className="mt-2 text-muted-foreground">
+                Try adjusting your search or filter criteria
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="suggested" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Suggested for You</h2>
+              <p className="text-muted-foreground">Personalized recommendations based on your interests</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {suggestedCourses.map((course) => (
+              <CourseCard key={course.id} course={course} navigate={navigate} variant="suggested" />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="featured" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Featured Courses</h2>
+              <p className="text-muted-foreground">Hand-picked courses from top instructors</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredCourses.map((course) => (
+              <CourseCard key={course.id} course={course} navigate={navigate} variant="featured" />
+            ))}
+          </div>
+          {featuredCourses.length === 0 && (
+            <div className="text-center py-12">
+              <Award className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-medium">No featured courses yet</h3>
+              <p className="mt-2 text-muted-foreground">
+                Featured courses will appear here based on ratings and popularity
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="trending" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Trending Courses</h2>
+              <p className="text-muted-foreground">Most popular courses this week</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {courses.slice(0, 6).map((course) => (
+              <CourseCard key={course.id} course={course} navigate={navigate} variant="trending" />
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

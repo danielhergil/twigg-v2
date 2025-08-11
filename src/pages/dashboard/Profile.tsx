@@ -15,12 +15,28 @@ import {
   Crown,
   Star,
   Zap,
-  Users
+  Users,
+  Key,
+  LogOut,
+  Settings,
+  Shield,
+  Mail,
+  Globe,
+  CheckCircle,
+  AlertCircle,
+  Copy,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Trophy,
+  BookOpen,
+  Clock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import { showError, showSuccess } from "@/utils/toast";
 import { AvatarUploadModal } from "@/components/AvatarUploadModal";
+import { useNavigate } from "react-router-dom";
 
 interface ProfileData {
   first_name: string;
@@ -85,6 +101,7 @@ const plans = [
 
 export default function Profile() {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,6 +114,9 @@ export default function Profile() {
   });
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState("Starter");
+  const [showToken, setShowToken] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [tokenVisible, setTokenVisible] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -134,17 +154,14 @@ export default function Profile() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, email, created_at")
-        .eq("id", user.id)
-        .single();
-      
-      if (error) throw error;
-      
-      setUserData(data);
+      // Use the user data from auth which is already available
+      setUserData({
+        id: user.id,
+        email: user.email || '',
+        created_at: user.created_at || new Date().toISOString()
+      });
     } catch (error) {
-      console.error("Failed to fetch user data:", error);
+      console.error("Failed to set user data:", error);
     }
   };
 
@@ -179,6 +196,40 @@ export default function Profile() {
     }
   };
 
+  const handleShowToken = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        setToken(session.access_token);
+        setShowToken(true);
+        console.log("User Access Token:", session.access_token);
+        console.log("Token will expire at:", new Date(session.expires_at * 1000));
+      } else {
+        console.log("No active session or token found");
+      }
+    } catch (error) {
+      console.error("Error getting session:", error);
+    }
+  };
+
+  const copyTokenToClipboard = () => {
+    if (token) {
+      navigator.clipboard.writeText(token);
+      showSuccess("Token copied to clipboard!");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate("/");
+      showSuccess("Logged out successfully!");
+    } catch (error) {
+      showError("Failed to logout");
+      console.error("Logout error:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -206,80 +257,228 @@ export default function Profile() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Profile</h1>
-        <p className="text-muted-foreground">Manage your account settings and preferences</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Card */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader className="text-center">
-              <div className="relative mx-auto">
-                {/* Circular avatar with object-cover to ensure proper cropping */}
-                <div className="h-24 w-24 mx-auto rounded-full overflow-hidden">
-                  {profile?.avatar_url ? (
-                    <img 
-                      src={getCacheBustedAvatarUrl(profile.avatar_url)} 
-                      alt="Profile picture" 
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <div className="bg-muted w-full h-full flex items-center justify-center">
-                      <User className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="absolute bottom-0 right-0 rounded-full h-8 w-8 p-0"
-                  onClick={() => setIsAvatarModalOpen(true)}
-                >
-                  <Edit3 className="h-3 w-3" />
-                </Button>
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 p-8">
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <div className="h-20 w-20 rounded-full overflow-hidden border-4 border-white/20 shadow-xl">
+                {profile?.avatar_url ? (
+                  <img 
+                    src={getCacheBustedAvatarUrl(profile.avatar_url)} 
+                    alt="Profile picture" 
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <div className="bg-white/20 w-full h-full flex items-center justify-center">
+                    <User className="h-8 w-8 text-white" />
+                  </div>
+                )}
               </div>
-              <CardTitle className="mt-4">
+              <Button
+                size="sm"
+                className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-0 bg-white text-black hover:bg-gray-100"
+                onClick={() => setIsAvatarModalOpen(true)}
+              >
+                <Edit3 className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="text-white">
+              <h1 className="text-3xl font-bold">
                 {profile?.first_name && profile?.last_name 
                   ? `${profile.first_name} ${profile.last_name}` 
                   : user?.email}
-              </CardTitle>
-              <CardDescription>
+              </h1>
+              <p className="text-blue-100 flex items-center gap-2">
+                <Mail className="h-4 w-4" />
                 {user?.email}
-              </CardDescription>
+              </p>
+              <p className="text-blue-200 flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4" />
+                Member since {getJoinDate()}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-3">
+            <Button 
+              variant="outline" 
+              className="border-white/30 text-white hover:bg-white hover:text-gray-900"
+              onClick={() => setIsEditing(true)}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Button>
+            <Button 
+              variant="destructive" 
+              className="bg-red-500 hover:bg-red-600"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute -top-10 -right-10 h-40 w-40 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 h-32 w-32 bg-yellow-400/20 rounded-full blur-2xl" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Sidebar Cards */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Quick Stats Card */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Quick Stats
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4 mr-2" />
-                Joined {getJoinDate()}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <BookOpen className="h-6 w-6 mx-auto text-blue-500 mb-1" />
+                  <div className="text-lg font-bold">0</div>
+                  <div className="text-xs text-muted-foreground">Courses</div>
+                </div>
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <Clock className="h-6 w-6 mx-auto text-green-500 mb-1" />
+                  <div className="text-lg font-bold">0h</div>
+                  <div className="text-xs text-muted-foreground">Learning</div>
+                </div>
               </div>
-              <Separator />
-              <div className="space-y-2">
-                <h3 className="font-medium">Account Information</h3>
-                <div className="text-sm space-y-1">
-                  <p>Email: {user?.email}</p>
-                  <p>Provider: {profile?.provider === 'google' ? 'Google' : 'Email'}</p>
-                  <p>Status: 
-                    <Badge variant={profile?.email_confirmed ? "default" : "destructive"} className="ml-2">
-                      {profile?.email_confirmed ? "Verified" : "Unverified"}
-                    </Badge>
-                  </p>
+              <div className="flex items-center justify-between text-sm">
+                <span>Learning Streak</span>
+                <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  0 days
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Account Status Card */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-green-500" />
+                Account Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Email Verified</span>
+                  </div>
+                  {profile?.email_confirmed ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Provider</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {profile?.provider === 'google' ? 'Google' : 'Email'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Plan</span>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+                    {currentPlan}
+                  </Badge>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Profile Details and Plan */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Personal Information */}
-          <Card>
+          {/* Developer Tools Card */}
+          <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5 text-blue-500" />
+                Developer Tools
+              </CardTitle>
+              <CardDescription>
+                Access your API token for development
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleShowToken}
+              >
+                <Key className="h-4 w-4 mr-2" />
+                {showToken ? 'Hide Token' : 'Show Access Token'}
+              </Button>
+              
+              {showToken && token && (
+                <div className="p-4 bg-muted rounded-lg border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Access Token</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={copyTokenToClipboard}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="relative">
+                    <code className="text-xs font-mono block p-2 bg-background rounded border overflow-hidden">
+                      {tokenVisible ? token : token.replace(/./g, '•')}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1 h-6 w-6 p-0"
+                      onClick={() => setTokenVisible(!tokenVisible)}
+                    >
+                      {tokenVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Keep your token secure. Check console for full token details.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Personal Information */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-blue-500" />
+                    Personal Information
+                  </CardTitle>
+                  <CardDescription>Keep your profile information up to date</CardDescription>
+                </div>
+                {!isEditing && (
+                  <Button variant="outline" onClick={() => setIsEditing(true)}>
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
               {isEditing ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -354,10 +553,6 @@ export default function Profile() {
                   </div>
                   
                   <div className="flex justify-end">
-                    <Button onClick={() => setIsEditing(true)}>
-                      <Edit3 className="h-4 w-4 mr-2" />
-                      Edit Profile
-                    </Button>
                   </div>
                 </div>
               )}
@@ -365,10 +560,13 @@ export default function Profile() {
           </Card>
 
           {/* Subscription Plan */}
-          <Card>
+          <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Subscription Plan</CardTitle>
-              <CardDescription>Manage your subscription and billing information</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-purple-500" />
+                Subscription Plan
+              </CardTitle>
+              <CardDescription>Choose the plan that's right for you</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -379,38 +577,69 @@ export default function Profile() {
                   return (
                     <Card 
                       key={plan.name} 
-                      className={`relative ${isCurrent ? "border-primary ring-2 ring-primary/20" : ""}`}
+                      className={`relative transition-all duration-300 hover:shadow-xl ${
+                        isCurrent 
+                          ? "border-2 border-primary ring-4 ring-primary/10 shadow-lg" 
+                          : "border hover:border-primary/50"
+                      }`}
                     >
                       {plan.popular && (
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1">
+                            <Sparkles className="h-3 w-3 mr-1" />
                             Most Popular
                           </Badge>
                         </div>
                       )}
-                      <CardContent className="pt-6">
-                        <div className="flex flex-col items-center text-center space-y-3">
-                          <div className={`p-3 rounded-full ${plan.color} bg-opacity-10`}>
-                            <Icon className={`h-6 w-6 ${plan.color.replace("bg-", "text-")}`} />
+                      {isCurrent && (
+                        <div className="absolute -top-4 right-4 z-10">
+                          <Badge className="bg-green-500 text-white px-3 py-1">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Current
+                          </Badge>
+                        </div>
+                      )}
+                      <CardContent className="pt-8 pb-6">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                          <div className={`p-4 rounded-2xl ${plan.color} bg-opacity-20 border-2 border-current border-opacity-20`}>
+                            <Icon className={`h-8 w-8 ${plan.color.replace("bg-", "text-")}`} />
                           </div>
                           <div>
-                            <h3 className="font-bold text-lg">{plan.name}</h3>
-                            <p className="text-2xl font-bold mt-1">{plan.price}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                            <h3 className="font-bold text-xl mb-1">{plan.name}</h3>
+                            <div className="flex items-baseline justify-center gap-1">
+                              <span className="text-3xl font-bold">{plan.price}</span>
+                              <span className="text-muted-foreground">/month</span>
+                            </div>
                           </div>
-                          <ul className="space-y-2 text-sm text-left w-full">
+                          <ul className="space-y-3 text-sm w-full">
                             {plan.features.map((feature, index) => (
-                              <li key={index} className="flex items-start">
-                                <Star className="h-4 w-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
-                                <span>{feature}</span>
+                              <li key={index} className="flex items-start text-left">
+                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
+                                <span className="text-muted-foreground">{feature}</span>
                               </li>
                             ))}
                           </ul>
                           <Button 
-                            className="w-full mt-4" 
+                            className={`w-full mt-6 ${
+                              plan.popular 
+                                ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" 
+                                : ""
+                            }`}
                             variant={isCurrent ? "secondary" : "default"}
                             disabled={isCurrent}
+                            size="lg"
                           >
-                            {isCurrent ? "Current Plan" : "Upgrade"}
+                            {isCurrent ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Current Plan
+                              </>
+                            ) : (
+                              <>
+                                <Crown className="h-4 w-4 mr-2" />
+                                Upgrade Now
+                              </>
+                            )}
                           </Button>
                         </div>
                       </CardContent>
@@ -419,16 +648,35 @@ export default function Profile() {
                 })}
               </div>
               
-              <div className="mt-6 p-4 bg-muted rounded-lg">
+              <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200/50">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Billing Information</h4>
-                    <p className="text-sm text-muted-foreground">Manage your payment methods and billing details</p>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <CreditCard className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-900 dark:text-blue-100">Billing & Payments</h4>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">Manage your payment methods and billing history</p>
+                    </div>
                   </div>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
+                  <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300">
+                    <CreditCard className="h-4 w-4 mr-2" />
                     Manage Billing
                   </Button>
+                </div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                    <div className="text-lg font-bold text-green-600">$0</div>
+                    <div className="text-xs text-muted-foreground">Current Bill</div>
+                  </div>
+                  <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                    <div className="text-lg font-bold text-blue-600">Free</div>
+                    <div className="text-xs text-muted-foreground">Current Plan</div>
+                  </div>
+                  <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                    <div className="text-lg font-bold text-purple-600">∞</div>
+                    <div className="text-xs text-muted-foreground">Days Left</div>
+                  </div>
                 </div>
               </div>
             </CardContent>

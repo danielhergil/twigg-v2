@@ -11,6 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import Explore from "./pages/dashboard/Explore";
 import Profile from "./pages/dashboard/Profile";
+import Create from "./pages/dashboard/Create";
+import CourseDetail from "./pages/dashboard/CourseDetail";
+import CourseExecution from "./pages/dashboard/CourseExecution";
 import { AuthProvider } from "./components/AuthProvider";
 
 const queryClient = new QueryClient();
@@ -29,7 +32,9 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />}>
                 <Route index element={<DashboardHome />} />
                 <Route path="explore" element={<Explore />} />
-                <Route path="create" element={<div>Create Content</div>} />
+                <Route path="course/:id" element={<CourseDetail />} />
+                <Route path="course/:id/learn" element={<CourseExecution />} />
+                <Route path="create" element={<Create />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<div>Settings Content</div>} />
               </Route>
