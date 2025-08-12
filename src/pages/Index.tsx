@@ -23,7 +23,7 @@ const FeatureCard = ({
       <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-pink-600 to-red-600 text-white shadow-lg shadow-purple-500/30">
         <Icon className="h-7 w-7" />
       </div>
-      <h3 className="font-bold text-xl text-gray-900 dark:text-foreground">{title}</h3>
+      <h3 className="font-bold text-xl text-foreground">{title}</h3>
       <p className="mt-2 text-base text-muted-foreground">{desc}</p>
     </div>
   </div>
@@ -57,14 +57,14 @@ const PriceCard = ({
         </Badge>
       </div>
     )}
-    <h3 className="text-2xl font-bold text-gray-900 dark:text-foreground">{name}</h3>
+    <h3 className="text-2xl font-bold text-foreground">{name}</h3>
     <div className="mt-4 flex items-end gap-1">
-      <span className="text-5xl font-extrabold tracking-tight text-gray-900 dark:text-foreground">${price}</span>
+      <span className="text-5xl font-extrabold tracking-tight text-foreground">${price}</span>
       <span className="text-lg text-muted-foreground">/mo</span>
     </div>
     <ul className="mt-6 space-y-4 flex-grow"> {/* Added flex-grow */}
       {features.map((f) => (
-        <li key={f} className="flex items-center gap-3 text-base text-gray-700 dark:text-muted-foreground">
+        <li key={f} className="flex items-center gap-3 text-base text-muted-foreground">
           <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 dark:text-primary" />
           <span>{f}</span>
         </li>
@@ -106,7 +106,7 @@ const Index = () => {
               <span className="hidden sm:inline">Adaptive learning at your fingertips</span>
               <span className="sm:hidden">Adaptive learning</span>
             </div>
-            <h1 className="mt-8 text-5xl md:text-7xl font-extrabold tracking-tight leading-tight text-gray-900 animate-fade-in-up delay-100 dark:text-foreground">
+            <h1 className="mt-8 text-5xl md:text-7xl font-extrabold tracking-tight leading-tight text-foreground animate-fade-in-up delay-100">
               Build, Learn, and Share Courses with{" "}
               <span className="bg-gradient-to-br from-purple-600 to-pink-700 bg-clip-text text-transparent drop-shadow-lg">
                 Twigg
@@ -139,7 +139,7 @@ const Index = () => {
               ].map(({ icon: Icon, label }) => (
                 <div
                   key={label}
-                  className="flex flex-col items-center justify-center gap-2 rounded-xl border border-purple-100 bg-white/70 py-4 text-sm text-gray-800 font-medium backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-105 dark:border-purple-800 dark:bg-card/60 dark:text-foreground"
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl border border-purple-100 bg-white/70 py-4 text-sm text-foreground font-medium backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-105 dark:border-purple-800 dark:bg-card/60"
                 >
                   <Icon className="h-6 w-6 text-purple-600 dark:text-primary" />
                   {label}
@@ -155,7 +155,7 @@ const Index = () => {
             <Badge variant="secondary" className="mb-3 bg-white/80 backdrop-blur-sm text-purple-700 dark:bg-card/60 dark:text-primary">
               Powerful Features
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-foreground">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground">
               Everything you need to{" "}
               <span className="bg-gradient-to-br from-purple-600 to-pink-700 bg-clip-text text-transparent">
                 succeed
@@ -194,7 +194,7 @@ const Index = () => {
               <Badge variant="secondary" className="mb-3 bg-white/80 backdrop-blur-sm text-purple-700 dark:bg-card/60 dark:text-primary">
                 Simple & Transparent
               </Badge>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-foreground">
+              <h2 className="text-4xl md:text-5xl font-bold text-foreground">
                 Pick the plan that{" "}
                 <span className="bg-gradient-to-br from-purple-600 to-pink-700 bg-clip-text text-transparent">
                   grows with you
@@ -246,7 +246,7 @@ const Index = () => {
 
         <section className="max-w-6xl mx-auto px-4 pb-20 text-center">
           <div className="mx-auto max-w-3xl rounded-3xl border border-purple-200 bg-white/80 p-10 backdrop-blur-sm shadow-xl shadow-purple-100/50 dark:border-purple-800 dark:bg-card/60 dark:shadow-purple-900/50">
-            <h3 className="text-3xl font-bold text-gray-900 dark:text-foreground">Ready to create your next great course?</h3>
+            <h3 className="text-3xl font-bold text-foreground">Ready to create your next great course?</h3>
             <p className="mt-4 text-lg text-muted-foreground">
               Join Twigg today and bring your learning and teaching to life with our powerful platform.
             </p>

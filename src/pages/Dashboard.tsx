@@ -6,8 +6,16 @@ import { Menu, X } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
 export default function Dashboard() {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -22,9 +30,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background flex flex-col">
       {/* Mobile sidebar toggle */}
-      <div className="md:hidden p-4 border-b">
+      <div className="md:hidden p-4 border-b flex-shrink-0">
         <Button 
           variant="ghost" 
           size="icon"
@@ -34,15 +42,15 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <div className="flex h-[calc(100vh-64px)]">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - hidden on mobile when closed */}
-        <div className={`${sidebarOpen ? "block" : "hidden"} md:block md:w-64 lg:w-72`}>
+        <div className={`${sidebarOpen ? "block" : "hidden"} md:block md:w-64 lg:w-72 flex-shrink-0`}>
           <Sidebar />
         </div>
 
         {/* Main content */}
         <div className="flex-1 overflow-auto">
-          <div className="p-4 md:p-6">
+          <div className="p-4 md:p-6 min-h-full">
             <Outlet />
           </div>
         </div>

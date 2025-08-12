@@ -76,38 +76,59 @@ export default function Explore() {
     try {
       setLoading(true);
       
-      // First, let's just fetch courses without the join to see if that works
-      console.log('Fetching courses...');
       const { data: coursesData, error: coursesError } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Courses data:', { coursesData, coursesError });
-
       if (coursesError) throw coursesError;
 
-      // If we have courses, let's also fetch the profile data separately
+      // Fetch profile data for course authors
       const userIds = coursesData?.map(course => course.user_id) || [];
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', userIds);
-
-      console.log('Profiles data:', { profilesData, profilesError });
-
+      let profilesData = [];
+      
+      if (userIds.length > 0) {
+        const { data, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email')
+          .in('id', userIds);
+        
+        if (!profilesError) {
+          profilesData = data || [];
+        }
+      }
+      
       // Create a map of user_id to profile for easy lookup
       const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
 
       const coursesWithInstructor: CourseWithInstructor[] = (coursesData || []).map(course => {
         const profile = profilesMap.get(course.user_id);
+        
+        // Determine instructor name with fallbacks
+        let instructorName = 'Unknown Instructor';
+        
+        if (profile) {
+          // Try first_name + last_name
+          const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+          if (fullName) {
+            instructorName = fullName;
+          } else if (profile.email) {
+            // Fallback to email username (part before @)
+            const emailUsername = profile.email.split('@')[0];
+            // Convert email username to readable format (replace dots/underscores with spaces and capitalize)
+            instructorName = emailUsername
+              .replace(/[._]/g, ' ')
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ');
+          }
+        }
+        
         return {
           ...course,
           profiles: profile || null,
-          instructor: profile ? 
-            `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown Instructor'
-            : 'Unknown Instructor',
-          students: Math.floor(Math.random() * 2000) + 100, // Mock student count for now
+          instructor: instructorName,
+          students: Math.floor(Math.random() * 2000) + 100,
           duration: course.duration_weeks ? `${course.duration_weeks} weeks` : 'Variable',
           isFeatured: (course.rating_avg || 0) >= 4.5 && (course.reviews_count || 0) >= 10,
           rating_avg: course.rating_avg || 0,
@@ -115,7 +136,6 @@ export default function Explore() {
         };
       });
 
-      console.log('Processed courses:', coursesWithInstructor);
       setCourses(coursesWithInstructor);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -201,7 +221,7 @@ export default function Explore() {
 
     return (
       <Card 
-        className="group flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 border-0 shadow-lg overflow-hidden" 
+        className="group flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1 border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card overflow-hidden" 
         onClick={() => navigate(`/dashboard/course/${course.id}`)}
       >
         <div className={`relative h-48 bg-gradient-to-r ${getGradientClass()}`}>
@@ -277,7 +297,7 @@ export default function Explore() {
                 {course.duration}
               </Badge>
             </div>
-            <div className="text-lg font-bold text-green-600">Free</div>
+            <div className="text-lg font-bold text-green-600 dark:text-green-400">Free</div>
           </div>
         </CardContent>
         
@@ -324,7 +344,7 @@ export default function Explore() {
               <Play className="h-5 w-5 mr-2" />
               Start Learning Today
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900">
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-foreground">
               <BarChart3 className="h-5 w-5 mr-2" />
               Browse by Category
             </Button>
@@ -385,7 +405,7 @@ export default function Explore() {
           </div>
           
           <div className="lg:w-80">
-            <div className="bg-muted/50 rounded-xl p-4">
+            <div className="bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium">Results Found</span>
                 <Badge variant="secondary" className="bg-primary/10 text-primary">

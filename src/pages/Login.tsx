@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { showError, showSuccess } from "@/utils/toast";
 import { EmailConfirmationMessage } from "@/components/EmailConfirmationMessage";
 import { useState } from "react";
+import { useTheme } from "next-themes";
 
 const signUpSchema = z.object({
   name: z.string().min(2, {
@@ -42,6 +43,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const { theme } = useTheme();
 
   const signUpForm = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -209,7 +211,7 @@ export default function Login() {
                     },
                   },
                 }}
-                theme="light"
+                theme={theme === 'dark' ? 'dark' : 'default'}
                 redirectTo={`${window.location.origin}/`}
               />
               <div className="mt-4">

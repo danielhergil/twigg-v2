@@ -81,9 +81,14 @@ export default function CourseExecution() {
   useEffect(() => {
     if (courseId && user) {
       fetchCourseData();
-      fetchUserProgress();
     }
   }, [courseId, user]);
+
+  useEffect(() => {
+    if (lessons.length > 0 && user) {
+      fetchUserProgress();
+    }
+  }, [lessons, user]);
 
   const fetchCourseData = async () => {
     if (!courseId) return;
@@ -338,7 +343,7 @@ export default function CourseExecution() {
   const overallProgress = calculateOverallProgress();
   const isLastLesson = currentLessonIndex === lessons.length - 1;
 
-  if (!hasStartedCourse && !userProgress.some(p => p.completed)) {
+  if (!loading && !hasStartedCourse && userProgress.length === 0) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -353,7 +358,7 @@ export default function CourseExecution() {
           </Button>
         </div>
 
-        <Card className="max-w-2xl mx-auto">
+        <Card className="max-w-2xl mx-auto border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Play className="h-5 w-5" />
@@ -426,7 +431,7 @@ export default function CourseExecution() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3">
-          <Card>
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -575,10 +580,10 @@ export default function CourseExecution() {
                               isSelected && !showSolution
                                 ? 'border-primary bg-primary/10'
                                 : showCorrect
-                                ? 'border-green-500 bg-green-50'
+                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                                 : showIncorrect
-                                ? 'border-red-500 bg-red-50'
-                                : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                             }`}
                             onClick={() => {
                               if (!showSolution) {
@@ -594,7 +599,7 @@ export default function CourseExecution() {
                                   ? 'border-green-500 bg-green-500 text-white'
                                   : showIncorrect
                                   ? 'border-red-500 bg-red-500 text-white'
-                                  : 'border-gray-300'
+                                  : 'border-gray-300 dark:border-gray-600'
                               }`}>
                                 {optionKey}
                               </div>
@@ -607,9 +612,9 @@ export default function CourseExecution() {
                     </div>
 
                     {showSolution && (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <h4 className="font-medium text-blue-900 mb-2">Explanation:</h4>
-                        <p className="text-blue-800">{currentTest.solution}</p>
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-600 rounded-lg">
+                        <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Explanation:</h4>
+                        <p className="text-blue-800 dark:text-blue-200">{currentTest.solution}</p>
                       </div>
                     )}
                   </div>
@@ -677,7 +682,7 @@ export default function CourseExecution() {
         </div>
 
         <div className="space-y-4">
-          <Card>
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <CardTitle className="text-lg">Course Progress</CardTitle>
             </CardHeader>
@@ -702,7 +707,7 @@ export default function CourseExecution() {
                           ? isCurrentLesson
                             ? 'bg-primary text-white'
                             : 'bg-muted text-muted-foreground'
-                          : 'bg-gray-300 text-gray-500'
+                          : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                       }`}>
                         {lessonProgress?.completed ? (
                           <CheckCircle className="h-3 w-3" />

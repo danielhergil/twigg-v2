@@ -179,28 +179,28 @@ export default function DashboardHome() {
       value: stats.coursesCreated.toString(), 
       icon: BookOpen,
       description: "Total courses you've created",
-      color: "text-blue-600"
+      color: "text-blue-600 dark:text-blue-400"
     },
     { 
       name: "Total Views", 
       value: formatNumber(stats.totalViews), 
       icon: Eye,
       description: "Views across all your courses",
-      color: "text-green-600"
+      color: "text-green-600 dark:text-green-400"
     },
     { 
       name: "Average Rating", 
       value: stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "0.0", 
       icon: Star,
       description: "Average rating across published courses",
-      color: "text-yellow-600"
+      color: "text-yellow-600 dark:text-yellow-400"
     },
     { 
       name: "Total Reviews", 
       value: stats.totalReviews.toString(), 
       icon: MessageSquare,
       description: "Reviews received on your courses",
-      color: "text-purple-600"
+      color: "text-purple-600 dark:text-purple-400"
     },
   ];
 
@@ -225,7 +225,7 @@ export default function DashboardHome() {
         {dashboardStats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.name} className="hover:shadow-lg transition-shadow">
+            <Card key={stat.name} className="hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.name}
@@ -247,7 +247,7 @@ export default function DashboardHome() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* My Courses */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>My Courses</CardTitle>
@@ -337,7 +337,7 @@ export default function DashboardHome() {
         {/* Recent Activity & Quick Actions */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <Card>
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
               <CardDescription>Common tasks and shortcuts</CardDescription>
@@ -371,7 +371,7 @@ export default function DashboardHome() {
           </Card>
 
           {/* Recent Activity */}
-          <Card>
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
               <CardDescription>Your latest course activities</CardDescription>
@@ -412,25 +412,25 @@ export default function DashboardHome() {
 
       {/* Performance Insights */}
       {stats.coursesCreated > 0 && (
-        <Card>
+        <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
           <CardHeader>
             <CardTitle>Performance Insights</CardTitle>
             <CardDescription>Track your growth and engagement</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-6 border rounded-lg">
-                <TrendingUp className="mx-auto h-8 w-8 text-green-500 mb-2" />
+              <div className="text-center p-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 shadow-sm">
+                <TrendingUp className="mx-auto h-8 w-8 text-green-600 dark:text-green-400 mb-2" />
                 <div className="text-2xl font-bold">{stats.coursesCreated}</div>
                 <p className="text-sm text-muted-foreground">Total Courses</p>
               </div>
-              <div className="text-center p-6 border rounded-lg">
-                <BarChart3 className="mx-auto h-8 w-8 text-blue-500 mb-2" />
+              <div className="text-center p-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 shadow-sm">
+                <BarChart3 className="mx-auto h-8 w-8 text-blue-600 dark:text-blue-400 mb-2" />
                 <div className="text-2xl font-bold">{formatNumber(stats.totalViews)}</div>
                 <p className="text-sm text-muted-foreground">Total Views</p>
               </div>
-              <div className="text-center p-6 border rounded-lg">
-                <Star className="mx-auto h-8 w-8 text-yellow-500 mb-2" />
+              <div className="text-center p-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 shadow-sm">
+                <Star className="mx-auto h-8 w-8 text-yellow-600 dark:text-yellow-400 mb-2" />
                 <div className="text-2xl font-bold">
                   {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0.0'}
                 </div>

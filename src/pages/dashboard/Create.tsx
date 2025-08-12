@@ -473,7 +473,7 @@ export default function Create() {
               
               {completedCourse && (
                 <div className="space-y-4">
-                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                  <div className="bg-green-100 dark:bg-green-900/20 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded">
                     <p className="font-medium">Course generation completed!</p>
                     <p className="text-sm">Your course is ready to be published.</p>
                   </div>
@@ -513,7 +513,7 @@ export default function Create() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Course Form */}
           <div className="lg:col-span-2 space-y-6">
-            <Card>
+            <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
               <CardHeader>
                 <CardTitle>Course Details</CardTitle>
                 <CardDescription>Provide the basic information for your course</CardDescription>
@@ -621,7 +621,7 @@ export default function Create() {
             </Card>
 
             {/* Cover Image Upload */}
-            <Card>
+            <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
               <CardHeader>
                 <CardTitle>Cover Image</CardTitle>
                 <CardDescription>Upload an eye-catching image for your course</CardDescription>
@@ -629,7 +629,7 @@ export default function Create() {
               <CardContent>
                 <div className="space-y-4">
                   <div 
-                    className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                    className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     onClick={() => document.getElementById("cover-image")?.click()}
                   >
                     <input
@@ -677,7 +677,7 @@ export default function Create() {
 
           {/* Preview and Actions */}
           <div className="space-y-6">
-            <Card>
+            <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
               <CardHeader>
                 <CardTitle>Course Preview</CardTitle>
                 <CardDescription>How your course will appear</CardDescription>
@@ -724,7 +724,7 @@ export default function Create() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
               <CardHeader>
                 <CardTitle>Generate Course</CardTitle>
                 <CardDescription>AI-powered course creation</CardDescription>

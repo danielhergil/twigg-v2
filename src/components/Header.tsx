@@ -47,7 +47,7 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-400 via-pink-400 to-red-500" />
-          <span className="font-bold text-xl tracking-tight text-gray-900 dark:text-white">Twigg</span>
+          <span className="font-bold text-xl tracking-tight text-foreground">Twigg</span>
         </Link>
         <nav className="flex items-center gap-4">
           {user ? (

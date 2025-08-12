@@ -68,7 +68,7 @@ const plans = [
       "Standard support"
     ],
     icon: User,
-    color: "bg-gray-500"
+    color: "bg-gray-500 dark:bg-gray-400"
   },
   {
     name: "Pro",
@@ -81,7 +81,7 @@ const plans = [
       "Custom branding options"
     ],
     icon: Crown,
-    color: "bg-purple-500",
+    color: "bg-purple-500 dark:bg-purple-400",
     popular: true
   },
   {
@@ -95,7 +95,7 @@ const plans = [
       "Dedicated account manager"
     ],
     icon: Users,
-    color: "bg-blue-500"
+    color: "bg-blue-500 dark:bg-blue-400"
   }
 ];
 
@@ -303,7 +303,7 @@ export default function Profile() {
           <div className="flex flex-col gap-3">
             <Button 
               variant="outline" 
-              className="border-white/30 text-white hover:bg-white hover:text-gray-900"
+              className="border-white/30 bg-white/10 text-white hover:bg-white hover:text-gray-900 backdrop-blur-sm"
               onClick={() => setIsEditing(true)}
             >
               <Settings className="h-4 w-4 mr-2" />
@@ -328,7 +328,7 @@ export default function Profile() {
         {/* Sidebar Cards */}
         <div className="lg:col-span-1 space-y-6">
           {/* Quick Stats Card */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-yellow-500" />
@@ -338,19 +338,19 @@ export default function Profile() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <BookOpen className="h-6 w-6 mx-auto text-blue-500 mb-1" />
+                  <BookOpen className="h-6 w-6 mx-auto text-blue-600 dark:text-blue-400 mb-1" />
                   <div className="text-lg font-bold">0</div>
                   <div className="text-xs text-muted-foreground">Courses</div>
                 </div>
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <Clock className="h-6 w-6 mx-auto text-green-500 mb-1" />
+                  <Clock className="h-6 w-6 mx-auto text-green-600 dark:text-green-400 mb-1" />
                   <div className="text-lg font-bold">0h</div>
                   <div className="text-xs text-muted-foreground">Learning</div>
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span>Learning Streak</span>
-                <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
+                <Badge variant="outline" className="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-600">
                   <Sparkles className="h-3 w-3 mr-1" />
                   0 days
                 </Badge>
@@ -359,7 +359,7 @@ export default function Profile() {
           </Card>
 
           {/* Account Status Card */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-green-500" />
@@ -402,7 +402,7 @@ export default function Profile() {
           </Card>
 
           {/* Developer Tools Card */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5 text-blue-500" />
@@ -460,7 +460,7 @@ export default function Profile() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Personal Information */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -560,7 +560,7 @@ export default function Profile() {
           </Card>
 
           {/* Subscription Plan */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-purple-500" />
@@ -666,15 +666,15 @@ export default function Profile() {
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                    <div className="text-lg font-bold text-green-600">$0</div>
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">$0</div>
                     <div className="text-xs text-muted-foreground">Current Bill</div>
                   </div>
                   <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                    <div className="text-lg font-bold text-blue-600">Free</div>
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">Free</div>
                     <div className="text-xs text-muted-foreground">Current Plan</div>
                   </div>
                   <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-                    <div className="text-lg font-bold text-purple-600">∞</div>
+                    <div className="text-lg font-bold text-purple-600 dark:text-purple-400">∞</div>
                     <div className="text-xs text-muted-foreground">Days Left</div>
                   </div>
                 </div>

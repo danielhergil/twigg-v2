@@ -51,11 +51,6 @@ export function Sidebar() {
           })}
         </nav>
       </div>
-      <div className="p-4 border-t">
-        <div className="text-xs text-muted-foreground">
-          Twigg Dashboard v1.0
-        </div>
-      </div>
     </div>
   );
 }

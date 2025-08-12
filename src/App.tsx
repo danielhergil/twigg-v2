@@ -19,32 +19,34 @@ import { AuthProvider } from "./components/AuthProvider";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={<Dashboard />}>
-                <Route index element={<DashboardHome />} />
-                <Route path="explore" element={<Explore />} />
-                <Route path="course/:id" element={<CourseDetail />} />
-                <Route path="course/:id/learn" element={<CourseExecution />} />
-                <Route path="create" element={<Create />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="settings" element={<div>Settings Content</div>} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <div className="h-full">
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/dashboard" element={<Dashboard />}>
+                  <Route index element={<DashboardHome />} />
+                  <Route path="explore" element={<Explore />} />
+                  <Route path="course/:id" element={<CourseDetail />} />
+                  <Route path="course/:id/learn" element={<CourseExecution />} />
+                  <Route path="create" element={<Create />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="settings" element={<div>Settings Content</div>} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </div>
 );
 
 export default App;

@@ -17,6 +17,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   ArrowLeft,
   Star, 
@@ -28,7 +39,12 @@ import {
   Share,
   Heart,
   Award,
-  CheckCircle
+  CheckCircle,
+  Edit,
+  Trash2,
+  Upload,
+  Image as ImageIcon,
+  AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
@@ -113,6 +129,17 @@ export default function CourseDetail() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [userProgress, setUserProgress] = useState<any[]>([]);
   const [hasStartedCourse, setHasStartedCourse] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    coverImage: null as File | null
+  });
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -122,6 +149,16 @@ export default function CourseDetail() {
       }
     }
   }, [id, user]);
+
+  useEffect(() => {
+    if (course) {
+      setEditForm({
+        title: course.title || '',
+        description: course.description || '',
+        coverImage: null
+      });
+    }
+  }, [course]);
 
   const fetchCourse = async (courseId: string) => {
     try {
@@ -329,6 +366,181 @@ export default function CourseDetail() {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditForm(prev => ({ ...prev, coverImage: file }));
+      
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const uploadCoverImage = async (file: File): Promise<string | null> => {
+    if (!id) return null;
+    
+    try {
+      // Check authentication first
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Current session:', session?.user?.id, 'Error:', sessionError);
+      
+      if (!session?.user) {
+        throw new Error('User not authenticated');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${id}_cover.${fileExt}`;
+      
+      console.log('Uploading file:', fileName, 'for user:', session.user.id);
+
+      // Delete existing cover image if it exists (optional, upsert will overwrite anyway)
+      const { error: deleteError } = await supabase.storage
+        .from('course-covers')
+        .remove([fileName]);
+      
+      // Ignore delete errors (file might not exist)
+      if (deleteError) {
+        console.log('Delete warning (expected if file doesn\'t exist):', deleteError.message);
+      }
+
+      // Upload the new image
+      const { data, error } = await supabase.storage
+        .from('course-covers')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) {
+        console.error('Upload error details:', error);
+        throw error;
+      }
+
+      console.log('Upload successful:', data);
+
+      const { data: urlData } = supabase.storage
+        .from('course-covers')
+        .getPublicUrl(fileName);
+
+      // Add cache busting parameter to ensure browser loads new image
+      const cacheBustedUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      console.log('Public URL generated:', cacheBustedUrl);
+      return cacheBustedUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showError('Failed to upload image: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      return null;
+    }
+  };
+
+  const handleUpdateCourse = async () => {
+    if (!course || !id) return;
+
+    try {
+      setIsUpdating(true);
+      let thumbnailUrl = course.thumbnail_url;
+
+      // Upload new image if selected
+      if (editForm.coverImage) {
+        console.log('Uploading new cover image...');
+        const uploadedUrl = await uploadCoverImage(editForm.coverImage);
+        if (uploadedUrl) {
+          thumbnailUrl = uploadedUrl;
+          console.log('New thumbnail URL:', uploadedUrl);
+        } else {
+          throw new Error('Failed to upload image');
+        }
+      }
+
+      console.log('Updating course with data:', {
+        title: editForm.title,
+        description: editForm.description,
+        thumbnail_url: thumbnailUrl
+      });
+
+      // Update course in database
+      const { data, error } = await supabase
+        .from('courses')
+        .update({
+          title: editForm.title.trim(),
+          description: editForm.description.trim(),
+          thumbnail_url: thumbnailUrl
+        })
+        .eq('id', id)
+        .select();
+
+      if (error) {
+        console.error('Database update error:', error);
+        throw error;
+      }
+
+      console.log('Course updated successfully:', data);
+      showSuccess('Course updated successfully!');
+      setIsEditModalOpen(false);
+      
+      // Reset form
+      setEditForm({
+        title: data[0]?.title || editForm.title,
+        description: data[0]?.description || editForm.description,
+        coverImage: null
+      });
+      
+      // Clean up preview URL
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+      
+      // Force refresh course data with a small delay to ensure database is updated
+      setTimeout(async () => {
+        await fetchCourse(id);
+      }, 100);
+    } catch (error) {
+      console.error('Error updating course:', error);
+      showError('Failed to update course: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!course || !id || deleteConfirmText !== course.title || !user) return;
+
+    try {
+      setIsDeleting(true);
+
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No authentication token available');
+      }
+
+      // Delete course using the API endpoint with authentication
+      const response = await fetch(`http://localhost:8000/courses/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete course');
+      }
+
+      showSuccess('Course deleted successfully!');
+      navigate('/dashboard/explore');
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      showError('Failed to delete course');
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+      setDeleteConfirmText('');
+    }
+  };
+
   const renderStarRating = (currentRating: number, onRatingChange?: (rating: number) => void) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -336,7 +548,7 @@ export default function CourseDetail() {
         className={`h-5 w-5 cursor-pointer transition-colors ${
           i < currentRating 
             ? "fill-yellow-400 text-yellow-400" 
-            : "text-gray-300 hover:text-yellow-400"
+            : "text-gray-300 dark:text-gray-600 hover:text-yellow-400"
         }`}
         onClick={() => onRatingChange && onRatingChange(i + 1)}
       />
@@ -362,6 +574,13 @@ export default function CourseDetail() {
     );
   }
   
+  // Function to add cache busting to image URLs
+  const getCacheBustedImageUrl = (url: string | null | undefined) => {
+    if (!url) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}cb=${Date.now()}`;
+  };
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -371,7 +590,7 @@ export default function CourseDetail() {
             ? "fill-yellow-400 text-yellow-400" 
             : i < rating 
             ? "fill-yellow-400/50 text-yellow-400" 
-            : "text-gray-300"
+            : "text-gray-300 dark:text-gray-600"
         }`}
       />
     ));
@@ -418,7 +637,20 @@ export default function CourseDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           <div className="space-y-6">
-            <div className="h-64 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg" />
+            <div className="h-64 rounded-lg overflow-hidden">
+              {course.thumbnail_url ? (
+                <img 
+                  src={getCacheBustedImageUrl(course.thumbnail_url)}
+                  alt={course.title}
+                  className="w-full h-full object-cover"
+                  key={course.thumbnail_url} // Force re-render when URL changes
+                />
+              ) : (
+                <div className="h-64 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg flex items-center justify-center">
+                  <ImageIcon className="h-16 w-16 text-white/60" />
+                </div>
+              )}
+            </div>
             
             <div className="space-y-4">
               <div className="flex items-start justify-between">
@@ -427,12 +659,36 @@ export default function CourseDetail() {
                   <p className="text-lg text-muted-foreground">{course.description || 'No description available'}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon">
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon">
-                    <Share className="h-4 w-4" />
-                  </Button>
+                  {isAuthor ? (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit Course
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setIsDeleteModalOpen(true)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" size="icon">
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="icon">
+                        <Share className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -486,7 +742,7 @@ export default function CourseDetail() {
                 <h3 className="text-xl font-semibold mb-4">Course Content</h3>
                 <div className="space-y-3">
                   {course.modules.map((module, index) => (
-                    <Card key={index}>
+                    <Card key={index} className="border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-card">
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -508,7 +764,7 @@ export default function CourseDetail() {
 
             <div>
               <h3 className="text-xl font-semibold mb-4">Instructor</h3>
-              <Card>
+              <Card className="border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
                 <CardHeader>
                   <div className="flex items-start gap-4">
                     <Avatar className="h-16 w-16">
@@ -662,7 +918,7 @@ export default function CourseDetail() {
         </div>
 
         <div className="space-y-6">
-          <Card className="sticky top-6">
+          <Card className="sticky top-6 border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-card">
             <CardHeader>
               <CardTitle className="text-2xl">Free</CardTitle>
             </CardHeader>
@@ -718,6 +974,170 @@ export default function CourseDetail() {
           </Card>
         </div>
       </div>
+
+      {/* Edit Course Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Course</DialogTitle>
+            <DialogDescription>
+              Update your course details and cover image.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Course Title</Label>
+              <Input
+                id="edit-title"
+                value={editForm.title}
+                onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Enter course title"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Course Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editForm.description}
+                onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Describe what students will learn in this course"
+                className="min-h-[120px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-cover">Cover Image</Label>
+              <div className="space-y-4">
+                <div 
+                  className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  onClick={() => document.getElementById("edit-cover")?.click()}
+                >
+                  <input
+                    type="file"
+                    id="edit-cover"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <div className="text-sm">
+                      <span className="font-medium text-primary cursor-pointer">Upload a new image</span>
+                      <span className="text-muted-foreground"> or drag and drop</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
+                  </div>
+                </div>
+
+                {/* Current or Preview Image */}
+                {(previewUrl || course?.thumbnail_url) && (
+                  <div className="relative">
+                    <div className="text-sm font-medium mb-2">
+                      {previewUrl ? 'New Image Preview:' : 'Current Image:'}
+                    </div>
+                    <div className="relative rounded-lg overflow-hidden border">
+                      <img 
+                        src={previewUrl || getCacheBustedImageUrl(course?.thumbnail_url) || ''} 
+                        alt="Course cover" 
+                        className="w-full h-48 object-cover"
+                        key={previewUrl || course?.thumbnail_url} // Force re-render when URL changes
+                      />
+                      {previewUrl && (
+                        <div className="absolute top-2 right-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setEditForm(prev => ({ ...prev, coverImage: null }));
+                              setPreviewUrl(null);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => {
+              setIsEditModalOpen(false);
+              if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                setPreviewUrl(null);
+              }
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateCourse} 
+              disabled={isUpdating || !editForm.title.trim()}
+            >
+              {isUpdating ? 'Updating...' : 'Update Course'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Course Modal */}
+      <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the course
+              "<strong>{course?.title}</strong>" and all associated data including lessons, modules, and student progress.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <span className="text-sm font-medium text-red-900 dark:text-red-100">
+                  Warning: This action is irreversible
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="delete-confirm">
+                Please type <strong>{course?.title}</strong> to confirm:
+              </Label>
+              <Input
+                id="delete-confirm"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type the course title here"
+                className="border-red-200 dark:border-red-800 focus:border-red-500"
+              />
+            </div>
+          </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setDeleteConfirmText('');
+                setIsDeleteModalOpen(false);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCourse}
+              disabled={deleteConfirmText !== course?.title || isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Course'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
