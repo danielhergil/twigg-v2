@@ -4,6 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Sparkles, Users, PencilRuler, Zap, Shield, Wand2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { CoursesGallery } from "@/components/CoursesGallery";
+import { CoursePreviewModal } from "@/components/CoursePreviewModal";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useState } from "react";
 
 const FeatureCard = ({
   icon: Icon,
@@ -86,6 +90,19 @@ const PriceCard = ({
 );
 
 const Index = () => {
+  const [previewCourseId, setPreviewCourseId] = useState<string | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
+  const handleCoursePreview = (courseId: string) => {
+    setPreviewCourseId(courseId);
+    setIsPreviewModalOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewModalOpen(false);
+    setPreviewCourseId(null);
+  };
+
   return (
     <div className="min-h-screen bg-[radial-gradient(75rem_30rem_at_50%_-5%,rgba(139,92,246,0.2),transparent),radial-gradient(60rem_28rem_at_120%_10%,rgba(236,72,153,0.25),transparent),linear-gradient(to_bottom,#fdf2f8,white)] dark:bg-[radial-gradient(75rem_30rem_at_50%_-5%,rgba(139,92,246,0.1),transparent),radial-gradient(60rem_28rem_at_120%_10%,rgba(236,72,153,0.15),transparent),linear-gradient(to_bottom,hsl(var(--background)),hsl(var(--background)))]">
       <Header />
@@ -184,6 +201,16 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Courses Gallery */}
+        <ErrorBoundary>
+          <CoursesGallery 
+            maxCourses={9}
+            showFilters={true}
+            variant="full"
+            onCoursePreview={handleCoursePreview}
+          />
+        </ErrorBoundary>
+
         {/* Pricing */}
         <section id="pricing" className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-0">
@@ -260,6 +287,13 @@ const Index = () => {
           </div>
         </section>
       </main>
+
+      {/* Course Preview Modal */}
+      <CoursePreviewModal
+        courseId={previewCourseId}
+        isOpen={isPreviewModalOpen}
+        onClose={handleClosePreview}
+      />
 
       <MadeWithDyad />
     </div>

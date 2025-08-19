@@ -15,6 +15,7 @@ import Create from "./pages/dashboard/Create";
 import CourseDetail from "./pages/dashboard/CourseDetail";
 import CourseExecution from "./pages/dashboard/CourseExecution";
 import { AuthProvider } from "./components/AuthProvider";
+import { CourseRedirectHandler } from "./components/CourseRedirectHandler";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/course/:id" element={<CourseRedirectHandler />} />
                 <Route path="/dashboard" element={<Dashboard />}>
                   <Route index element={<DashboardHome />} />
                   <Route path="explore" element={<Explore />} />

@@ -3,6 +3,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -40,10 +41,24 @@ const signUpSchema = z.object({
 export default function Login() {
   const [searchParams] = useSearchParams();
   const isRegisterMode = searchParams.get("mode") === "register";
+  const redirectPath = searchParams.get("redirect");
+  const courseId = searchParams.get("course");
   const navigate = useNavigate();
   const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const { theme } = useTheme();
+
+  // Store redirect information when component mounts
+  useEffect(() => {
+    if (redirectPath || courseId) {
+      const redirectData = {
+        path: redirectPath || `/dashboard/course/${courseId}`,
+        courseId: courseId || undefined,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('auth_redirect', JSON.stringify(redirectData));
+    }
+  }, [redirectPath, courseId]);
 
   const signUpForm = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -79,10 +94,20 @@ export default function Login() {
 
   const handleGoogleAuth = async () => {
     try {
+      // Construct redirect URL with course context if available
+      let redirectTo = `${window.location.origin}/`;
+      
+      // If we have course context, add it to the redirect URL
+      if (courseId) {
+        redirectTo = `${window.location.origin}/course/${courseId}`;
+      } else if (redirectPath) {
+        redirectTo = `${window.location.origin}${redirectPath}`;
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo,
         },
       });
       
@@ -121,9 +146,15 @@ export default function Login() {
             {isRegisterMode ? "Create an account" : "Welcome to Twigg"}
           </h1>
           <p className="text-muted-foreground mb-6">
-            {isRegisterMode 
-              ? "Fill in your details to get started" 
-              : "Sign in or create an account to start building and taking courses."}
+            {courseId ? (
+              isRegisterMode 
+                ? "Create an account to access this course and start learning"
+                : "Sign in to access this course and continue your learning journey"
+            ) : (
+              isRegisterMode 
+                ? "Fill in your details to get started" 
+                : "Sign in or create an account to start building and taking courses."
+            )}
           </p>
 
           {isRegisterMode ? (
@@ -189,7 +220,10 @@ export default function Login() {
                 </Button>
                 <p className="text-sm text-center text-muted-foreground">
                   Already have an account?{" "}
-                  <a href="/login" className="text-purple-600 hover:underline dark:text-primary">
+                  <a 
+                    href={`/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}${courseId ? `${redirectPath ? '&' : '?'}course=${courseId}` : ''}`} 
+                    className="text-purple-600 hover:underline dark:text-primary"
+                  >
                     Sign in
                   </a>
                 </p>
@@ -212,7 +246,13 @@ export default function Login() {
                   },
                 }}
                 theme={theme === 'dark' ? 'dark' : 'default'}
-                redirectTo={`${window.location.origin}/`}
+                redirectTo={
+                  courseId 
+                    ? `${window.location.origin}/course/${courseId}`
+                    : redirectPath 
+                    ? `${window.location.origin}${redirectPath}`
+                    : `${window.location.origin}/`
+                }
               />
               <div className="mt-4">
                 <Button 
@@ -231,7 +271,10 @@ export default function Login() {
               </div>
               <p className="text-sm text-center text-muted-foreground mt-4">
                 Don't have an account?{" "}
-                <a href="/login?mode=register" className="text-purple-600 hover:underline dark:text-primary">
+                <a 
+                  href={`/login?mode=register${redirectPath ? `&redirect=${encodeURIComponent(redirectPath)}` : ''}${courseId ? `&course=${courseId}` : ''}`} 
+                  className="text-purple-600 hover:underline dark:text-primary"
+                >
                   Sign up
                 </a>
               </p>

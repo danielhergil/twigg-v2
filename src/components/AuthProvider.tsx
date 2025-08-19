@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthRedirect, clearAuthRedirect } from "@/hooks/useAuthGate";
 
 type AuthProviderProps = {
   children: React.ReactNode;
@@ -103,9 +104,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.error('Profile creation failed on sign-in:', error);
         });
         
-        // Redirect to dashboard after successful login/signup
-        if (location.pathname === '/login') {
-          navigate('/dashboard');
+        // Handle post-authentication redirect
+        if (location.pathname === '/login' || location.pathname === '/') {
+          const redirectData = getAuthRedirect();
+          if (redirectData) {
+            clearAuthRedirect();
+            
+            console.log('Redirecting user after authentication:', redirectData);
+            
+            // Navigate to the intended destination
+            if (redirectData.courseId) {
+              navigate(`/dashboard/course/${redirectData.courseId}`);
+            } else if (redirectData.path) {
+              navigate(redirectData.path);
+            } else {
+              navigate('/dashboard');
+            }
+          } else {
+            // Check URL parameters as fallback
+            const urlParams = new URLSearchParams(location.search);
+            const redirectParam = urlParams.get('redirect');
+            const courseParam = urlParams.get('course');
+            
+            if (courseParam) {
+              navigate(`/dashboard/course/${courseParam}`);
+            } else if (redirectParam) {
+              navigate(decodeURIComponent(redirectParam));
+            } else {
+              navigate('/dashboard');
+            }
+          }
         }
       }
     });
